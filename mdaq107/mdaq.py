@@ -35,6 +35,8 @@ __author__='Gustavo A. Pasquevich'
 
 FIRMWARE='MDAQ107-MAC'
 
+_CODE = 'ascii'
+
 _TERMINATOR='\r\n'   #CR+LF
 _RESETSTRING=FIRMWARE+_TERMINATOR     # String que devuelve la placa al resetear
 _NUMBYTESRESETSTRING=len(_RESETSTRING)
@@ -142,7 +144,7 @@ class Instrument():
         if ch1>0x3FF :  raise ValueError('Maximum ch1 0x3FF')
         if ch0>ch1: raise ValueError('ch0 must be lower than ch1')
         self._command_with_echo('G',ch0)
-        self._command_with_echo('G',ch1)
+        self._command_with_echo('g',ch1)
         if self.VERBOSE: print('Gate set between channels %d and %d'%(ch0,ch1) + ' OK' )  
 
     #U) Set Time Base -> 'U:uuuu?'[4xHEX] + EOL (uuuu is actual value)
@@ -174,11 +176,11 @@ class Instrument():
             output string: "0100 02A3 0010 0800 0FFF"+TERMINATOR correspond to
             Amplitude = 0x100, Central Channel = 0x2A3, Cycle Number 0x10,
             Offset = 0x800 and Time Base = 0xFFF """        
-        self.ser.write('P')
-        instr=self.ser.readline()
-        if len(instr)!=26:
+        self.ser.write('P'.encode(_CODE))
+        instr = self.ser.readline().decode(_CODE)
+        if len(instr) != 26:
             raise _UnexpectedProtocol('P',tipo=1,string=instr)
-        return instr[:-2]  # el -1 es para eliminar el fin de linea \r\n
+        return instr[:-2]  # The -2 for remove TREMINATOR \r\n at the end of the string
 
     # L) Error  -> '11111111 22222222 33333333 44444444' + EOL
     # NO ESTA PROGRAMADA. Esta función tengo entendido que será discontinuada en
@@ -197,9 +199,9 @@ class Instrument():
             The complet string returned by the instrument. It should be a
             1024x4 chars string."""
         
-        self.ser.write('Y')
-        instr=self.ser.readline()
-        if len(instr)!=_NUMBYTESESPEC:
+        self.ser.write('Y'.encode(_CODE))
+        instr = self.ser.readline().decode(_CODE)
+        if len(instr) != _NUMBYTESESPEC:
             raise _UnexpectedProtocol('Y',tipo=1,string=instr)
         return instr
 
@@ -225,10 +227,10 @@ class Instrument():
         conversor={4:('I','I'),     # los valores del diccionario son:
                    2:('J','H'),     # (formato para el hardware, comando de 
                    1:('V','B')}     #            conversión para struct.unpack)
-        self.ser.write(conversor[nbytes][0])
-        numdata=nbytes*1024
-        instr=self.ser.read(numdata)
-        ctemp=struct.unpack('<1024'+conversor[nbytes][1],instr)
+        self.ser.write(conversor[nbytes][0].encode(_CODE))
+        numdata = nbytes*1024
+        instr = self.ser.read(numdata)
+        ctemp = struct.unpack('<1024'+conversor[nbytes][1],instr)
         self.counts += ctemp
         if self.VERBOSE: print('contador interno actualizado')
         return ctemp
@@ -240,11 +242,11 @@ class Instrument():
         Send "M" command to Hardware.
 
         Returns: An int number.""" 
-        self.ser.write('M')
-        instr=self.ser.readline()
+        self.ser.write('M'.encode(_CODE))
+        instr = self.ser.readline().decode(_CODE)
         if len(instr)!=10:
             raise _UnexpectedProtocol('M',tipo=1,string=instr)
-        return int(instr,16)
+        return int(instr,16) #returns integer after convering from hex-string. 
 
     #Z) Reset Spectrum (resets cycle counter) -> 'OK' + EOL 
     def clear(self,soft=False):
@@ -256,14 +258,14 @@ class Instrument():
         Args:
             soft: {False} or True. If True it claer also the internal variable 
                 counts.  """        
-        self.ser.write('Z')
-        instr=self.ser.readline()
+        self.ser.write('Z'.encode(_CODE))
+        instr = self.ser.readline().decode(_CODE)
         if len(instr)!=4:
             raise _UnexpectedProtocol('Z',tipo=1,string=instr)
         if self.VERBOSE: print('Counters Cleared')
         
         if soft:
-            self.counts=zeros(1024,'int')
+            self.counts = zeros(1024,'int')
             if self.VERBOSE: print('Internal Counter cleared')
         
     # WAVEFORM COMMANDS --------------------------------------------------------
@@ -277,9 +279,9 @@ class Instrument():
 
         Returns: 4x1024 +2 length string. (Wave + LF + CR)         
         """
-        self.ser.write('X')
-        instr = self.ser.readline()
-        if len(instr)!=_NUMBYTESWAVEIN:
+        self.ser.write('X'.encode(_CODE))
+        instr = self.ser.readline().decode(_CODE)
+        if len(instr) != _NUMBYTESWAVEIN:
             raise _UnexpectedProtocol('Wave string not expected lenght')
         return instr
 
@@ -301,8 +303,8 @@ class Instrument():
             correspond to a wave that start with the numbers 0,1,2,3,4 and end with 
             the numbers 0x3FD,0x3FE and 0x3FF
         """ 
-        self.ser.write('W'+wavestr)
-        instr=self.ser.readline()
+        self.ser.write(('W'+wavestr).encode(_CODE))
+        instr = self.ser.readline().decode(_CODE)
         if len(instr)!=4:
             raise _UnexpectedProtocol('W',tipo=1,string=instr)
 
@@ -314,8 +316,8 @@ class Instrument():
         """ START the adquisition. 
 
         Send "S" command to Hardware."""
-        self.ser.write('S')
-        instr = self.ser.read(4)
+        self.ser.write('S'.encode(_CODE))
+        instr = self.ser.read(4).decode(_CODE)
         if instr != 'OK\r\n':
             raise _UnexpectedProtocol('S',tipo=1,string=instr)        
 
@@ -324,8 +326,8 @@ class Instrument():
         """ STOP the adquisition. 
 
         Send "T" command to Hardware."""    
-        self.ser.write('T')
-        instr = self.ser.read(4)
+        self.ser.write('T'.encode(_CODE))
+        instr = self.ser.read(4).decode(_CODE)
         if instr != 'OK\r\n':
             raise _UnexpectedProtocol('T',tipo=1,string=instr)
 
@@ -335,11 +337,11 @@ class Instrument():
         
         Reset the hardware and clear the input buffer.
         """
-        self.ser.write('*')  # Este asterisco no se para que lo mando? 
-                             # Pero por algo debe estar
+        self.ser.write('*'.encode(_CODE))  # I don't remember why I send that '*'. Maybe to ensure
+                                      # abort any thing is waitting mdaq module 
         self.ser.read(self.ser.inWaiting())
-        self.ser.write('R')
-        instr=self.ser.read( _NUMBYTESRESETSTRING)
+        self.ser.write('R'.encode(_CODE))
+        instr = self.ser.read( _NUMBYTESRESETSTRING).decode(_CODE)
         if instr == _RESETSTRING and self.ser.inWaiting()==0:
             print('reset.. OK')
         else:
@@ -349,18 +351,21 @@ class Instrument():
     # --------------------------------------------------------------------------
 
     def _command_with_echo(self,com,value):
-        """ Función auxiliar.
+        """ Send the command "com" and read the next 7 characters: "com":XXXX?  
 
-        Envía el comando "com".        
-        Leé 7 caracteres: "com":XXXX?        
+        
+        com: single-character string. 
+             With teh corresponding mdaq107 command.
+        value: decimal value
         """
-        self.ser.write(com)
-        instr=self.ser.read(7)
+        self.ser.write(com.encode(_CODE))
+        instr=self.ser.read(7).decode(_CODE)
         if instr[0:2]!= com+':' or instr[6]!='?':
             raise _UnexpectedProtocol(com,tipo=1,string=instr)
-        self.ser.write('%0.4X'%value)
-        instr=self.ser.read(6)
-        if instr != '%0.4X'%value + _TERMINATOR:
+        numstr = '{:04X}'.format(value)
+        self.ser.write(numstr.encode(_CODE))
+        instr=self.ser.read(6).decode(_CODE)
+        if instr != numstr.format(value) + _TERMINATOR:
             raise _UnexpectedProtocol(com,tipo='EchoFail')
             
     def open(self):
