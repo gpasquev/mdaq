@@ -43,19 +43,16 @@ import serial
 __version__= '0.0.140403'
 __author__ = 'Gustavo A. Pasquevich'
 
-# 0.0.1 - Se agerga la funcion frequency y el correspondiente método a la instancia 
-#         de mdaq.Instruments.
-
-
 
 FIRMWARE='MDAQ209'
 CANALES = 2048
 
+_CODE = 'ascii'
 
 _TERMINATOR='\r\n'   #CR+LF
 _RESETSTRING=FIRMWARE+_TERMINATOR     # String que devuelve la placa al resetear
 _NUMBYTESRESETSTRING = len(_RESETSTRING)
-_NUMBYTESWAVEIN = 4*CANALES+2
+_NUMBYTESWAVEIN = 4*CANALES + 2
 _NUMBYTESESPEC = 4096+2
 
 #print '----------------------------------------------------------'
@@ -95,11 +92,11 @@ class Instrument():
                  'M':None,
                  'C':None}
 
-    def __init__(self,port):
+    def __init__(self,port,baudrate=115200):
         self.version = __version__
         self.firmware = FIRMWARE
         self.port = port
-        self.ser = serial.Serial(port,115200,timeout=4)   # MIRAR BAUD RATE --ETAPA DE PRUEBA
+        self.ser = serial.Serial(port,baudrate,timeout=4)   # MIRAR BAUD RATE --ETAPA DE PRUEBA
         self.counts = [] #zeros(CANALES,'int')
 
     def __repr__(self):
@@ -127,7 +124,7 @@ class Instrument():
             raise ValueError('input must be an positive integer')
         self._command_with_echo('K',K)
         if self.VERBOSE:
-            print 'Amplitude %d'%K + ' OK'
+            print('Amplitude %d'%K + ' OK')
 
 
     # ACTUALIZADO - TEST COM
@@ -176,12 +173,12 @@ class Instrument():
             Args:
                 P: an integer between 0x0000 (0) and 0x0x0200 (512)."""
         if P > 0x0200:
-            raise ValueError,'Maximum Step 0x0200'
+            raise ValueError('Maximum Step 0x0200')
         if P < 0:
-            raise ValueError,'Minimum Step 0x0000'
+            raise ValueError('Minimum Step 0x0000')
         self._command_with_echo('P',P)
         if self.VERBOSE:
-            print 'Step %d'%P + ' OK'
+            print('Step %d'%P + ' OK')
 
     # ACTUALIZADO  - TEST COM
     #G) Set start gate channel -> 'G:gggg?'[4xHEX] + EOL (gggg is actual value)
@@ -195,13 +192,13 @@ class Instrument():
 
                  ch1: End-channel of the GATE signal. """
         if ch1>0x3FF:
-            raise ValueError,'Maximum ch1 0x3FF'
+            raise ValueError('Maximum ch1 0x3FF')
         if ch0>ch1:
-            raise ValueError,'ch0 must be lower than ch1'
+            raise ValueError('ch0 must be lower than ch1')
         self._command_with_echo('G',ch0)
         self._command_with_echo('g',ch1)
         if self.VERBOSE:
-            print 'Gate set between channels %d and %d'%(ch0,ch1) + ' OK'
+            print('Gate set between channels %d and %d'%(ch0,ch1) + ' OK')
 
     # ==========================================================================
     # Data commands ============================================================
@@ -224,8 +221,8 @@ class Instrument():
         if P == 0:
             raise NotImplementedError
 
-        self.ser.write('Y')
-        instr = self.ser.readline()
+        self.ser.write('Y'.encode(_CODE))
+        instr = self.ser.readline().decode(_CODE)
 
         if CANALES%P == 0:    # For take into acount non divisible Steps
             plus = 0
@@ -280,7 +277,7 @@ class Instrument():
         ctemp = struct.unpack('<%d'%numchan+conversor[nbytes][1],instr)
         self.counts += ctemp
         if self.VERBOSE:
-            print 'contador interno actualizado'
+            print('internal counter updated')
         return ctemp
 
     # ACTUALIZADO - testeado
@@ -291,11 +288,11 @@ class Instrument():
         Send "M" command to Hardware.
 
         Returns: An int number."""
-        self.ser.write('M')
-        instr=self.ser.readline()
+        self.ser.write('M'.encode(_CODE))
+        instr=self.ser.readline().decode(_CODE)
         if self.COMMVERBOSE:
-            print '>> M'
-            print '<<',instr
+            print('>> M')
+            print('<<',instr)
         
         if len(instr)!=10:
             raise _UnexpectedProtocol('M',tipo=1,string=instr)
@@ -309,8 +306,8 @@ class Instrument():
         Send "m" command to Hardware.
 
         Returns: An int number."""
-        self.ser.write('m')
-        instr=self.ser.readline()
+        self.ser.write('m'.encode(_CODE))
+        instr=self.ser.readline().decode(_CODE)
         if len(instr)!=10:
             raise _UnexpectedProtocol('m',tipo=1,string=instr)
         return int(instr,16)
@@ -326,15 +323,16 @@ class Instrument():
         Args:
             soft: {False} or True. If True it claer also the internal variable
                 of the instance: Instruments.counts.  """
-        self.ser.write('Z')
-        instr=self.ser.readline()
+        self.ser.write('Z'.encode(_CODE))
+        instr=self.ser.readline().decode(_CODE)
         if len(instr)!=4:
             raise _UnexpectedProtocol('Z',tipo=1,string=instr)
-        if self.VERBOSE: print 'Hardware Counters Cleared'
+        if self.VERBOSE: print('Hardware Counters Cleared')
 
         if soft:
             self.counts = []
-            if self.VERBOSE: print 'Internal Counter cleared'
+            if self.VERBOSE: 
+                print('Internal Counter cleared')
 
 #    DEPRECATED NO MORE IN THE HARDWARE
 #    #Q) Set Central Channel -> 'Q:qqqq?'[4xHEX] + EOL (qqqq is actual value)
@@ -357,9 +355,11 @@ class Instrument():
 
             Args:
                 Offset: an integer between 0 and 0xFFF."""
-        if Offset>0xFFF:    raise ValueError,'Maximum N 0xFFF'
+        if Offset>0xFFF:    
+            raise ValueError('Maximum N 0xFFF')
         self._command_with_echo('O',Offset)
-        if self.VERBOSE: print 'Offset %d'%Offset + ' OK'
+        if self.VERBOSE: 
+            print('Offset %d'%Offset + ' OK')
 
     # ACTUALIZADO
     # h) Status line only -> '......' + EOL
@@ -379,8 +379,8 @@ class Instrument():
                 0800 16E3 0001 00000000 00000000 00003FFF 00000100 000006FF + TERMINATOR
 
         """
-        self.ser.write('h')
-        instr=self.ser.readline()
+        self.ser.write('h'.encode(_CODE))
+        instr=self.ser.readline().decode(_CODE)
 
         if len(instr)!=61:
             raise _UnexpectedProtocol('h',tipo=1,string=instr)
@@ -390,7 +390,7 @@ class Instrument():
 
         if pretty:
             for k in ['C','U','P','N','M','K','G','g']:
-                print k, self.HWPARS[k]
+                print(k,self.HWPARS[k])
 
         return instr[:-2]  # el -1 es para eliminar el fin de linea \r\n
 
@@ -407,10 +407,10 @@ class Instrument():
 
         Returns: 4x2048 +2 length string. (Wave + EOL)
         """
-        self.ser.write('X')
-        instr = self.ser.readline()
+        self.ser.write('X'.encode(_CODE))
+        instr = self.ser.readline().decode(_CODE)
         if len(instr)!=_NUMBYTESWAVEIN:
-            raise _UnexpectedProtocol, 'Wave string not expected lenght'
+            raise _UnexpectedProtocol('Unexpected wave-string length')
         return instr
 
     # W) Upload Waveform -> 'OK' + EOL
@@ -431,8 +431,9 @@ class Instrument():
             correspond to a wave that start with the numbers 0,1,2,3,4 and end with
             the numbers 0x3FD,0x3FE and 0x3FF
         """
-        self.ser.write('W'+wavestr)
-        instr=self.ser.readline()
+        outstr = 'W' + wavestr
+        self.ser.write(outstr.encode(_CODE))
+        instr=self.ser.readline().decode(_CODE)
         if len(instr)!=4:
             raise _UnexpectedProtocol('W',tipo=1,string=instr)
 
@@ -448,7 +449,8 @@ class Instrument():
 
         """
         dic = {'MAC':'A','MVC':'V','PROG':'P'}
-        self.ser.write('L'+dic[which])
+        outstr = 'L'+dic[which]
+        self.ser.write(outstr.encode(_CODE))
         #    instr=self.ser.readline()
         #    if len(instr)!=4:
         #        raise _UnexpectedProtocol('W',tipo=1,string=instr)
@@ -463,12 +465,12 @@ class Instrument():
         """ START the adquisition.
 
         Send "S" command to Hardware."""
-        self.ser.write('S')
+        self.ser.write('S'.encode(_CODE))
         if self.COMMVERBOSE:
-            print '>> S'
-        instr = self.ser.read(4)
+            print('>> S')
+        instr = self.ser.read(4).decode(_CODE)
         if self.COMMVERBOSE:
-            print '<<',instr
+            print('<<',instr)
         if instr != 'OK\r\n':
             raise _UnexpectedProtocol('S',tipo=1,string=instr)
 
@@ -478,12 +480,12 @@ class Instrument():
         """ STOP the adquisition.
 
         Send "T" command to Hardware."""
-        self.ser.write('T')
+        self.ser.write('T'.encode(_CODE))
         if self.COMMVERBOSE:
-            print '>> T'
-        instr = self.ser.read(4)
+            print('>> T')
+        instr = self.ser.read(4).decode(_CODE)
         if self.COMMVERBOSE:
-            print '<<',instr
+            print('<<',instr)
         if instr != 'OK\r\n':
             raise _UnexpectedProtocol('T',tipo=1,string=instr)
 
@@ -495,16 +497,16 @@ class Instrument():
 
         Reset the hardware and clear the input buffer.
         """
-        self.ser.write('*')  # Este asterisco lo mando para cortar cualquier
-                             # eventual espera de datos desde el hardware
+        self.ser.write('*'.encode(_CODE))  # I don't remember why I send that '*'. Maybe to ensure
+                                           # abort any thing is waitting mdaq module 
 
         self.ser.read(self.ser.inWaiting())   # vacio el buffer
         if self.VERBOSE:
-            print 'bytes:',self.ser.inWaiting()
-        self.ser.write('R')
-        instr=self.ser.read(_NUMBYTESRESETSTRING)
-        if instr == _RESETSTRING and self.ser.inWaiting()==0:
-            print 'reset.. OK'
+            print('bytes:',self.ser.inWaiting())
+        self.ser.write('R'.encode(_CODE))
+        instr = self.ser.read(_NUMBYTESRESETSTRING).decode(_CODE)
+        if instr == _RESETSTRING and self.ser.inWaiting() == 0:
+            print('reset.. OK')
         else:
             raise _UnexpectedProtocol('R',tipo=1,string=instr)
 
@@ -515,21 +517,22 @@ class Instrument():
         """ Auxiliar function for standar setting parameters comunication.
 
         Send the "com" command, then read the next 7 chars: "com":XXXX?. Then
-        send the decided value. and read the echo.
+        send the wanted value and read the echo.
 
         If all works right the corresponding self.HWPARS is updates.
         On the contrary if something goes bad, all the HWPARS are updated to
         None indicating the unknown situation.
 
         """
-        self.ser.write(com)
-        instr=self.ser.read(7)
-
+        self.ser.write(com.encode(_CODE))
+        instr=self.ser.read(7).decode(_CODE)
+ 
         if instr[0:2]!= com+':' or instr[6]!='?':
             raise _UnexpectedProtocol(com,tipo=1,string=instr)
 
-        self.ser.write('%0.4X'%value)
-        instr=self.ser.read(6)
+        numstr = '{:04X}'.format(value)
+        self.ser.write(numstr.encode(_CODE))
+        instr = self.ser.read(6).decode(_CODE)
 
         if instr != '%0.4X'%value + _TERMINATOR:  # something wrong!!!
             for k in self.HWPARS.keys():
@@ -537,6 +540,8 @@ class Instrument():
             raise _UnexpectedProtocol(com,tipo='EchoFail')
         else:                                     # All OK
             self.HWPARS[com] = value
+
+
 
 
     def open(self):
@@ -549,7 +554,7 @@ class Instrument():
 
     def raw(self,COMM):
         """ Send COMM and receipt. """
-        self.ser.write(COMM)
+        self.ser.write(COMM.encode(_CODE))
         sleep(0.1)
         nb = self.ser.inWaiting()
         strout = ''
@@ -557,7 +562,7 @@ class Instrument():
             strout += self.ser.read(nb)
             nb = self.ser.inWaiting()
             sleep(0.01)
-        print strout
+        print(strout.decode(_CODE))
 
     def frequency(self,P=None,U=None):
         """ Calculate the actual work frequency (in Herz).
@@ -575,7 +580,7 @@ class _UnexpectedProtocol(Exception):
         if tipo == 0:
             self.value = value
         elif tipo == 1:
-            self.value = 'Respuesta al comando %s de longitud no esperada. Respuesta entre comillas: "%s"'%(value,string)
+            self.value = 'Unexpected response to the command %s. Response: "%s"'%(value,string)
         elif tipo == 'EchoFail':
             self.value = 'Fallo en el echo del comando %s'%(value)
     def __str__(self):
@@ -637,7 +642,7 @@ def wavefromfile(datafile,label):
         if k.split(':')[0] == label:
             return k.split(':')[1][:-1]   # el -1 es para eliminar el fin de
                                           # línea al final del archivo
-    raise ValueError, 'Wave labeled: %s isn''t in the file %s'%(label,datafile)
+    raise ValueError('Wave labeled: %s isn''t in the file %s'%(label,datafile))
 
 def wavesonfile(datafile):
     """list the waves contents of datafile.

@@ -60,7 +60,7 @@ class _UnexpectedProtocol(Exception):
         if tipo == 0:
             self.value = value
         elif tipo == 1:
-            self.value = 'Respuesta al comando %s de longitud no esperada. Respuesta entre comillas: "%s"'%(value,string)
+            self.value = 'Unexpected response to the command %s. Response: "%s"'%(value,string)
         elif tipo == 'EchoFail':
             self.value = 'Fallo en el echo del comando %s'%(value)
     def __str__(self):
