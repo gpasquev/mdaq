@@ -10,13 +10,20 @@ MDAQ-UNLP NIM modules.
 To start use mdaq with a MDAQ-UNLP equipment just put in an interactive python
 shell::
 
-    >>> mdaq.Instrument('/dev/ttyS0')
+    >>> hw = mdaq.Instrument('/dev/ttyS0')
 
-(with the **correct port** you are using). 
+(with the **correct port**).
+
+If the PC-Hardware is correctly connected you shold receipt an OK to the reset
+command::
+
+    >>> hw.reset()
+
+
 
 Class:
-    mdaq.Instrument: Class of objects capables of interact with the hardware MDAQ
-    through the serial port.
+    mdaq.Instrument: Class of objects capables of interact with the
+    hardware MDAQ through the serial port.
 
 Func:
     mdaq.wavesonfile
@@ -83,7 +90,8 @@ class Instrument():
         text+='port %s \n'%self.port
         return text
     #===========================================================================
-    # Basic interface functions 
+    # Basic interface functions ================================================
+    #===========================================================================
 
     #K) Set Amplitude -> 'K:kkkk?'[4xHEX] + EOL (kkkk is actual value)
     #[0000]=max+, [0FFF]=max-, [0800]=zero

@@ -139,11 +139,9 @@ class Instrument():
 
             Args:
                 N: an integer between 0 and 0xFFFF."""
-        if N>0xFFFF:
-            raise ValueError,'Maximum N 0xFFFF'
+        if N>0xFFFF: raise ValueError('Maximum N 0xFFFF')
         self._command_with_echo('N',N)
-        if self.VERBOSE:
-            print 'Cycle Number set to %d'%N + ' OK'
+        if self.VERBOSE: print('Cycle Number set to %d'%N + ' OK')
 
     # ACTUALIZADO - TEST COM
     #U) Set Time Base -> 'U:uuuu?'[4xHEX] + EOL (uuuu is actual value)
@@ -158,12 +156,12 @@ class Instrument():
             Args:
                 U: an integer between 0x500 (1280) and 0xFFFF (65535)."""
         if U>0xFFFF:
-            raise ValueError,'Maximum Time Base 0xFFFF'
+            raise ValueError('Maximum Time Base 0xFFFF')
         if U<0x500:
-            raise ValueError,'Minimum Time Base 0x500'
+            raise ValueError('Minimum Time Base 0x500')
         self._command_with_echo('U',U)
         if self.VERBOSE:
-            print 'TimeBase %d'%U + ' OK'
+            print('TimeBase %d'%U + ' OK')
 
     # ACTUALIZADO, nuevo en mdaq208  - TEST COM
     #P) Set step -> 'P:pppp?'[4xHEX] + EOL (pppp is actual value)
