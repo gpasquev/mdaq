@@ -151,11 +151,11 @@ class Instrument():
         """ SET the TIMEBASE on the instrument. Send "U" command to Hardware.
 
             Args:
-                U: an integer between 0x500 (1280) and 0xFFFF (65535)."""
+                U: an integer between 0x200 (512) and 0xFFFF (65535)."""
         if U>0xFFFF:
             raise ValueError('Maximum Time Base 0xFFFF')
-        if U<0x500:
-            raise ValueError('Minimum Time Base 0x500')
+        if U<0x200:
+            raise ValueError('Minimum Time Base 0x200')
         self._command_with_echo('U',U)
         if self.VERBOSE:
             print('TimeBase %d'%U + ' OK')
@@ -166,6 +166,7 @@ class Instrument():
     #f=120Mhz*PASO/CANALES/BASE
     #PASO mejor que sea potencia de 2
     #DWELLmin = 33.33 us. Con 4 puntos (PASO=0x0200) se llega hasta 50 KHz. Ojo el slew-rate. Usar K=0x1900 o menos.
+    ### Dejo este comentario durante programación de mdaq209
 
     def setStep(self,P):
         """ SET the STEP on the instrument. Send "P" command to Hardware.
