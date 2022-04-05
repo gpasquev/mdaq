@@ -92,3 +92,17 @@ for k in range(1,9):
 
 done()
 
+#======================================================================
+title('GATE')
+hw.reset()
+pars = [int(k,16) for k in hw.getStatus().split()]
+
+print('PUT GATE OUTPUT ON CHANNEL 2')
+print('Default GATE from %d to %d'%(pars[6],pars[7]))
+push()
+hw.setGate(0,2048)
+print('Set GATE to second half traingualar wave')
+
+done()
+
+

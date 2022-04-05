@@ -245,18 +245,24 @@ class Instrument():
         Send "I","J" or "V" commands to the Hardware.
 
         Args:
-            nbytes: an of the integers = 1,2 or 4, which indicates number
-            of bytes per channel:
+            nbytes: number of bytes per channel 1,2 or 4.
 
-                nbytes = 1: return the LSB unsigned char  [2048 bytes].  I at mdaq208
-                nbytes = 2: return the LSB unsigned short [4096 bytes].  J at mdaq208
-                nbytes = 4: DEFAULT. return the LSB unsigned int   [8192 bytes].  V at mdaq208
+                nbytes = 1: return the LSB unsigned char  [2048 bytes].  
+                            I at mdaq208/209
+                nbytes = 2: return the LSB unsigned short [4096 bytes].  
+                            J at mdaq208/209
+                nbytes = 4: DEFAULT. return the LSB unsigned int [8192 bytes].
+                            V at mdaq208/209
 
-        Returns:  2048/P list of integers (the counters!).  """
+        Returns:  2048/P list of integers (the counters!). 
+        
+        
+        """
         conversor={4:('I','I'),     # los valores del diccionario son:
                    2:('J','H'),     # (formato para el hardware, comando de
-                   1:('V','B')}     #            conversión para struct.unpack)
+                   1:('V','B')}     #      conversión para struct.unpack)
 
+        # somthing related to P different of one     
         if self.HWPARS['P'] == None:
             self.getStatus()
         P = self.HWPARS['P']
@@ -268,12 +274,17 @@ class Instrument():
         else:
             plus = 1
 
+        # send V J or I dependieng of nbytes
+        self.ser.write(conversor[nbytes][0].encode(_CODE))  
+        numchan = int(CANALES/P) + plus  # number of spected channels
 
-        self.ser.write(conversor[nbytes][0])  # send V J or I dependieng of nbytes
 
-        numchan = int(CANALES/P) + plus  # number od spected channels
-
+        
+        self.ser.timeout = 10
         instr = self.ser.read(nbytes*numchan)
+        self.ser.timeout = 4
+        # Timeout workaround is due to low baudrate of mdaq209A. 
+
 
         ctemp = struct.unpack('<%d'%numchan+conversor[nbytes][1],instr)
         self.counts += ctemp
@@ -560,10 +571,10 @@ class Instrument():
         nb = self.ser.inWaiting()
         strout = ''
         while nb > 0:
-            strout += self.ser.read(nb)
+            strout += self.ser.read(nb).decode(_CODE)
             nb = self.ser.inWaiting()
-            sleep(0.01)
-        print(strout.decode(_CODE))
+            sleep(0.05)
+        print(strout)
 
     def frequency(self,P=None,U=None):
         """ Calculate the actual work frequency (in Herz).
