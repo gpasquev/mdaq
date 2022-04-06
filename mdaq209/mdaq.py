@@ -192,14 +192,14 @@ class Instrument():
                  ch0: Start-channel of the GATE signal.
 
                  ch1: End-channel of the GATE signal. """
-        if ch1>0x3FF:
-            raise ValueError('Maximum ch1 0x3FF')
-        if ch0>ch1:
-            raise ValueError('ch0 must be lower than ch1')
+        if ch0 > 0x800:
+            raise ValueError('Maximum ch0 0x800')
+        if ch1 > 0x800:
+            raise ValueError('Maximum ch1 0x800')
         self._command_with_echo('G',ch0)
         self._command_with_echo('g',ch1)
         if self.VERBOSE:
-            print('Gate set between channels %d and %d'%(ch0,ch1) + ' OK')
+            print('Gate ON on channel %d and GATE OFF on channel %d'%(ch0,ch1) + ' OK')
 
     # ==========================================================================
     # Data commands ============================================================

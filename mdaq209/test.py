@@ -100,8 +100,12 @@ pars = [int(k,16) for k in hw.getStatus().split()]
 print('PUT GATE OUTPUT ON CHANNEL 2')
 print('Default GATE from %d to %d'%(pars[6],pars[7]))
 push()
-hw.setGate(0,2048)
-print('Set GATE to second half traingualar wave')
+hw.setGate(0,1024)
+print('Set GATE ON on first half of tringualar wave')
+push()
+hw.setGate(1024,0)
+print('Set GATE ON on second half of tringualar wave')
+
 
 done()
 
