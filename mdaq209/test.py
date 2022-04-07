@@ -5,7 +5,7 @@
 
 import sys
 import mdaq
-
+import time
 
 PORT = '/dev/ttyUSB0'
 BR   = 19200
@@ -106,7 +106,47 @@ push()
 hw.setGate(1024,0)
 print('Set GATE ON on second half of tringualar wave')
 
+done()
+
+#======================================================================
+title('CYCLE NUMBER, START and STOP')
+M0 = hw.getCycleNumber()
+print('Initial Cycle numebers {:}'.format(M0))
+hw.start()
+print('Acqusition has started, wait 1 second')
+time.sleep(1)
+M0 = hw.getCycleNumber()
+print('Cycle numebers {:}'.format(M0))
+print('wait 1 second')
+time.sleep(1)
+hw.stop()
+M0 = hw.getCycleNumber()
+print('Acquisition is stopped')
+print('Cycle numbers {:}'.format(M0))
+print('wait 1 second')
+time.sleep(1)
+M0 = hw.getCycleNumber()
+print('Cycle numbers {:}'.format(M0))
 
 done()
+
+#======================================================================
+title('SET CYCLE NUMBERS  NO ANDA')
+NNN = 1000
+hw.stop()
+freq = hw.frequency()
+hw.setCycleNumber(NNN)
+print('Cycles were set to %d'%NNN)
+hw.start()
+DT = NNN/freq+0.1
+print('Wait {:d}/freq +0.1 = {:f}'.format(NNN,DT))
+time.sleep(DT)
+M0 = hw.getCycleNumber()
+print('Cycle numbers {:}'.format(M0))
+
+
+
+
+
 
 

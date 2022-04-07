@@ -48,6 +48,7 @@ FIRMWARE='MDAQ209'
 CANALES = 2048
 
 _CODE = 'ascii'
+CLOCK = 100e6
 
 _TERMINATOR='\r\n'   #CR+LF
 _RESETSTRING=FIRMWARE+_TERMINATOR     # String que devuelve la placa al resetear
@@ -675,11 +676,11 @@ def frequency(P,U):
     """ Returns the frequency corresponding to the parameters P (step) and 
         U (TimeBase). 
 
-        returns   f = 120Mhz * PASO / CANALES / BASE
+        returns   f = 100Mhz * PASO / CANALES / BASE   (mdaq209A)
 
         """
 
-    return 120e6*P/CANALES/U
+    return CLOCK*P/CANALES/U
 
 def time2N(t,P,U):
     """ Returns cycle number N such that the total elapsed time is as close as possible 't'. """
