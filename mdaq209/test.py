@@ -8,7 +8,8 @@ import mdaq
 import time
 
 PORT = '/dev/ttyUSB0'
-BR   = 19200
+# BR   = 19200
+BR   = 115200
 
 # Auxiliary functions ------------------------------
 def title(string):
@@ -131,18 +132,26 @@ print('Cycle numbers {:}'.format(M0))
 done()
 
 #======================================================================
-title('SET CYCLE NUMBERS  NO ANDA')
-NNN = 1000
+title('SET CYCLE NUMBERS ')
+NNN = 100
 hw.stop()
+hw.clear()
 freq = hw.frequency()
+DT = NNN/freq
+print('Current frequency: {:.2f}'.format(freq))
+print('Acquisition will be done on {NNN:d} cycles'.format(NNN=NNN))
 hw.setCycleNumber(NNN)
-print('Cycles were set to %d'%NNN)
 hw.start()
-DT = NNN/freq+0.1
-print('Wait {:d}/freq +0.1 = {:f}'.format(NNN,DT))
-time.sleep(DT)
+print('Acquisition has started, we have to wait to RK answer indicating')
+print('Tt should be finnish in {:.2f} seconds'.format(DT))
+hw.waitRK()
+print('RK answer has arrived!!!')
 M0 = hw.getCycleNumber()
 print('Cycle numbers {:}'.format(M0))
+
+done()
+
+
 
 
 

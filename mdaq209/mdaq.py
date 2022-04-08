@@ -48,7 +48,7 @@ FIRMWARE='MDAQ209'
 CANALES = 2048
 
 _CODE = 'ascii'
-CLOCK = 100e6
+CLOCK = 120e6
 
 _TERMINATOR='\r\n'   #CR+LF
 _RESETSTRING=FIRMWARE+_TERMINATOR     # String que devuelve la placa al resetear
@@ -141,6 +141,18 @@ class Instrument():
         self._command_with_echo('N',N)
         if self.VERBOSE: print('Cycle Number set to %d'%N + ' OK')
 
+    def waitRK(self):
+        """ 
+        Wait until RK (answer to START when N != 0) appears on input buffer.
+        """
+        while self.ser.inWaiting() == 0:
+            pass
+        instr = self.ser.read(4).decode(_CODE)
+        if self.COMMVERBOSE:
+            print('<<',instr)
+        if instr != 'RK\r\n':
+            raise _UnexpectedProtocol('RK',tipo=2,string=instr)
+        
     # ACTUALIZADO - TEST COM
     #U) Set Time Base -> 'U:uuuu?'[4xHEX] + EOL (uuuu is actual value)
     #f=120Mhz*PASO/CANALES/BASE
@@ -206,8 +218,8 @@ class Instrument():
     # Data commands ============================================================
     # ==========================================================================
 
-    # MODIFICADO - VERIFICADO
-    #Y) Dump hex Spectrum -> 4xHEX x 2048/P + EOL
+    # VERIFY 2022 mdaq209
+    #Y) Dump hex Spectrum -> 8xHEX x 2048/P + EOL
 
     def getCounters(self):
         """ GET the COUNTERS in Hexadecimal ASCII representation.
@@ -230,8 +242,9 @@ class Instrument():
             plus = 0
         else:
             plus = 1
-
-        if len(instr)!= 4 * (int(CANALES/P) + plus) + 2:
+        
+        # modified from 4 to 8 for mdaq209
+        if len(instr)!= 8 * (int(CANALES/P) + plus) + 2:
             raise _UnexpectedProtocol('Y',tipo=1,string=instr)
         return instr
 
@@ -347,22 +360,9 @@ class Instrument():
             if self.VERBOSE: 
                 print('Internal Counter cleared')
 
-#    DEPRECATED NO MORE IN THE HARDWARE
-#    #Q) Set Central Channel -> 'Q:qqqq?'[4xHEX] + EOL (qqqq is actual value)
-#    #[0000]=max+, [0FFF]=max-, [0800]=center
-#    #Default=[0800]
-#    def setCentralChannel(self,Q):
-#        """ Set the CENTRAL CHANNEL. Send "Q" command to the instrument.
-#
-#            Args:
-#                Q: an integer betwenn 0 and 4095. """
-#        if Q>0xFFF :  raise ValueError,'Maximum Q 0xFFF'
-#        if Q<0     :  raise ValueError,'Input must be an positive integer'
-#        self._command_with_echo('Q',Q)
-#        if self.VERBOSE: print 'Central Channel set to %d'%Q + ' OK'
-
-
     #O) Set Offset -> 'O:oooo?'[4xHEX] + EOL (oooo is actual value)
+    # THIS COMMAND IS STILL ON MDAQ209.... BUT IS NOT IN HELP.
+    # I DON'T KNOW WHTA IT DOES HERE
     def setOffset(self,Offset):
         """ SET the OFFSET. Send "O" command to the Instrument.
 
@@ -380,16 +380,16 @@ class Instrument():
         """ GET instrument STATUS. Send "h" to the instrument.
 
         Returns:
-            The status string given by the Hardware, three four char hexadecimal
-            which represents:
+            The status string given by the Hardware, three four char 
+            hexadecimal which represents:
             CHAN BASE STEP N_CYCLES M_CYCLES AMPLTUDE GATESTRT GATESTOP
 
-        kwarg pretty: True or {False}.   prints status in apretty format
+        kwarg pretty: True or {False}.  prints status in a pretty format
 
         Example raw output string (pretty = False):
             output string::
 
-                0800 16E3 0001 00000000 00000000 00003FFF 00000100 000006FF + TERMINATOR
+        0800 16E3 0001 00000000 00000000 00003FFF 00000100 000006FF + TERMINATOR
 
         """
         self.ser.write('h'.encode(_CODE))
@@ -411,14 +411,14 @@ class Instrument():
     # WAVEFORM COMMANDS ========================================================
     #===========================================================================
 
+    # Verified 2022 mdaq209
     # X) Dump Waveform -> 4xHEX x 2048 + EOL
-    # X) Dump Waveform -> 4xHEX x 1024 + EOL
     def getWave(self):
         """ GET WAVE from hardware.
 
         Send "X" command to Hardware.
 
-        Returns: 4x2048 +2 length string. (Wave + EOL)
+        Returns: 4*2048 + 2 length string. (Wave + EOL)
         """
         self.ser.write('X'.encode(_CODE))
         instr = self.ser.readline().decode(_CODE)
@@ -426,27 +426,31 @@ class Instrument():
             raise _UnexpectedProtocol('Unexpected wave-string length')
         return instr
 
+
+    # PROBLEMAS CON EL SETEO DE ONDAS. PUEDE 
+    # QUE ALGO CON EL TIEMPO ENTER CARACTERES
+    # ENVIADOS   WORKING!!!!
     # W) Upload Waveform -> 'OK' + EOL
     def setWave(self,wavestr):
         """ SET WAVE on hardware.
 
-        Send "W" command to Hardware.
+        Send "W" command to the hardware.
 
         Args:
-            The input argument ("wavestr") must be an string with the WAVE values
-            one each before the other in 4 hexadecimal digits without spaces and
-            without end of line characters.
+            The input argument ("wavestr") must be an string with the WAVE 
+            values one each before the other in 4 hexadecimal digits without 
+            spaces and without end of line characters.
 
             Expected input string: 4x2048 char wavestring.
 
         Example:
             wavestr='00000001000200030004......03FD03FE03FF'
-            correspond to a wave that start with the numbers 0,1,2,3,4 and end with
-            the numbers 0x3FD,0x3FE and 0x3FF
+            correspond to a wave that start with the numbers 0,1,2,3,4 and 
+            end with the numbers 0x3FD,0x3FE and 0x3FF.
         """
-        outstr = 'W' + wavestr
-        self.ser.write(outstr.encode(_CODE))
-        instr=self.ser.readline().decode(_CODE)
+        self.ser.write('W'.encode(_CODE))
+        self.ser.write(wavestr.encode(_CODE))
+        instr = self.ser.readline().decode(_CODE)
         if len(instr)!=4:
             raise _UnexpectedProtocol('W',tipo=1,string=instr)
 
@@ -458,15 +462,12 @@ class Instrument():
         Send "L" command to Hardware.
 
         Args:
-            string:  MAC, MVC or PROG.
+            string:  CA, CV or PROG.
 
         """
-        dic = {'MAC':'A','MVC':'V','PROG':'P'}
+        dic = {'MAC':'A','MVC':'V','PROG':'P','CA':'A','CV':'V'}
         outstr = 'L'+dic[which]
         self.ser.write(outstr.encode(_CODE))
-        #    instr=self.ser.readline()
-        #    if len(instr)!=4:
-        #        raise _UnexpectedProtocol('W',tipo=1,string=instr)
 
     #===========================================================================
     # RUN COMMANDS =============================================================
@@ -595,27 +596,32 @@ class _UnexpectedProtocol(Exception):
         elif tipo == 1:
             self.value = 'Unexpected response to the command %s. Response: "%s"'%(value,string)
         elif tipo == 'EchoFail':
-            self.value = 'Fallo en el echo del comando %s'%(value)
+            self.value = 'Failed echo command %s'%(value)
+        elif tipo == 2:
+            self.value = 'Not expected string. Received: {:}'.format(value)
     def __str__(self):
         return repr(self.value)
 
 
 def hes2numlist(string,bn):
-    """ hexadecimal string to list of integers.
+    """ Hexadecimal string to list of integers.
 
     Args:
-        string: string with hexadecimal integers of the same char length without
-            separation character.
+        string: string with hexadecimal integers of the same char length 
+        without separation character.
         bn: integer. Number of characters per hexadecimal number.
 
     Returns: A list of integers.
 
     Example:
-        if string='0001000A000D...' and bn = 4 then the function
-        returns [1,10,13,...].   """
-    n=len(string)/bn
-    y=list()
-    for i in xrange(n):
+        If string='0001000A000D0010...' and bn = 4 then the function
+        returns [1,10,13,16,...].  
+        
+        Same string but with bn = 8 returns [65546, 851984, ...].
+    """
+    n = int(len(string)/bn)
+    y = list()
+    for i in range(n):
         y.append(int(string[i*bn:bn*(i+1)],16))
     return y
 
@@ -634,8 +640,8 @@ def heswis2numlist(string):
     Example:
         if string='0001 000A 000D...' and bn = 4 then the function
         returns [1,10,13,...].   """
-    a=string.split()
-    lista=list()
+    a = string.split()
+    lista = list()
     for k in a:
         lista.append(int(k,16))
     return lista
