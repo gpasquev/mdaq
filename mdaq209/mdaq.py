@@ -2,22 +2,22 @@
 # coding: utf8
 
 """
-Python Driver to work on MDAQ208 hardware.
+Python Driver to work on MDAQ209 hardware.
 
 The current module have low leves drivers to interact through serial port with
-MDAQ208-UNLP NIM module.
+MDAQ209-UNLP NIM module.
 
 To start use mdaq with a MDAQ-UNLP equipment just put in an interactive python
-shell::
+shell (as ipython)::
 
     >>> hw = mdaq.Instrument('/dev/ttyS0')
 
-(with the **correct port**).
+(with the '/dev/ttyS0' should be replaced by the **correct port**).
 
-If the PC-Hardware is correctly connected you shold receipt an OK to the reset
+If the PC-Hardware is correctly connected you should receipt an OK to the reset
 command::
 
-    >>> hw.reset()
+    >>> hw.reset()      
 
 
 
@@ -33,14 +33,13 @@ Func:
 
 """
 
-# # AVERIGUAR QUE PASA CON LOS P QUE NO SON POTENCIA DE 2, Y LOS IMPARES
 import struct
 from time import sleep
 
 import serial
 
 
-__version__= '0.0.140403'
+__version__= '0.0.220411'
 __author__ = 'Gustavo A. Pasquevich'
 
 
@@ -50,25 +49,20 @@ CANALES = 2048
 _CODE = 'ascii'
 CLOCK = 120e6
 
-_TERMINATOR='\r\n'   #CR+LF
-_RESETSTRING=FIRMWARE+_TERMINATOR     # String que devuelve la placa al resetear
+_TERMINATOR = '\r\n'   #CR+LF
+_RESETSTRING = FIRMWARE+_TERMINATOR  
 _NUMBYTESRESETSTRING = len(_RESETSTRING)
 _NUMBYTESWAVEIN = 4*CANALES + 2
 _NUMBYTESESPEC = 4096+2
-
-#print '----------------------------------------------------------'
-#print 'Python Drivers for Mössbauer system %s'%FIRMWARE
-#print 'version %s'%__version__
-#print '----------------------------------------------------------'
 
 class Instrument():
     """ Intermediary between de MDAQ-UNLP Hardware and the python user.
 
     Each instance gives the user a full set of methods to intercat with the
-    MDAQ208 module. In fact there is almost a  method for each intrinsic
+    MDAQxxx module. In fact there is almost a  method for each intrinsic
     command of the Hardware.
 
-    Some paralle to hardware parameters (as class' atribute) are defined::
+    Some parallel to hardware parameters (as class' atribute) are defined::
 
         Intrument.HWPARS: a dictionary with the values of the fundamental
         parameters of the Hardware: K, N, U, P, G, g, M and C.
@@ -77,10 +71,10 @@ class Instrument():
 
     >>> hw = mdaq.Instrument(port)
 
-    where "port" is a string indicating the port where the Hardware is conected.
-    For example, '/dev/ttyS0' or '/dev/ttyUSB0'.
+    where "port" is a string indicating the port where the Hardware is 
+    conected. For example, '/dev/ttyS0' or '/dev/ttyUSB0'.
 
-        """
+    """
     VERBOSE = True
     COMMVERBOSE = False
 
@@ -133,10 +127,12 @@ class Instrument():
     #Default=[0000]
 
     def setCycleNumber(self,N):
-        """ SET the NUMBER of CYCLES to be adquired. Send "N" command to Hardware.
+        """ 
+        SET the NUMBER of CYCLES to be adquired. Send "N" command to Hardware.
 
-            Args:
-                N: an integer between 0 and 0xFFFF."""
+        Args:
+            N: integer between 0 and 0xFFFF.
+        """
         if N>0xFFFF: raise ValueError('Maximum N 0xFFFF')
         self._command_with_echo('N',N)
         if self.VERBOSE: print('Cycle Number set to %d'%N + ' OK')
@@ -222,12 +218,14 @@ class Instrument():
     #Y) Dump hex Spectrum -> 8xHEX x 2048/P + EOL
 
     def getCounters(self):
-        """ GET the COUNTERS in Hexadecimal ASCII representation.
+        """ 
+        GET the COUNTERS in Hexadecimal ASCII representation.
 
         Send "Y" command to Hardware and return the response.
 
         Returns:
-            The complete string returned by the instrument. """
+            The complete string returned by the instrument. 
+        """
 
         if self.HWPARS['P'] == None:
             self.getStatus()
@@ -254,7 +252,8 @@ class Instrument():
     #V) Dump char bin Spectrum -> 1x2048/P (uint8) Warning! No EOL
 
     def getBinCounters(self,nbytes=4):
-        """ GET de COUNTERS in Binary format.
+        """ 
+        GET de COUNTERS in Binary format.
 
         Send "I","J" or "V" commands to the Hardware.
 
@@ -362,7 +361,7 @@ class Instrument():
 
     #O) Set Offset -> 'O:oooo?'[4xHEX] + EOL (oooo is actual value)
     # THIS COMMAND IS STILL ON MDAQ209.... BUT IS NOT IN HELP.
-    # I DON'T KNOW WHTA IT DOES HERE
+    # I DON'T KNOW WHAT IT IS DOING THERE. (8/4/22)
     def setOffset(self,Offset):
         """ SET the OFFSET. Send "O" command to the Instrument.
 
@@ -377,7 +376,8 @@ class Instrument():
     # ACTUALIZADO
     # h) Status line only -> '......' + EOL
     def getStatus(self,pretty=False):
-        """ GET instrument STATUS. Send "h" to the instrument.
+        """ 
+        GET instrument STATUS. Send "h" to the instrument.
 
         Returns:
             The status string given by the Hardware, three four char 
@@ -389,7 +389,7 @@ class Instrument():
         Example raw output string (pretty = False):
             output string::
 
-        0800 16E3 0001 00000000 00000000 00003FFF 00000100 000006FF + TERMINATOR
+        0800 16E3 0001 00000000 00000000 00003FFF 00000100 000006FF +TERMINATOR
 
         """
         self.ser.write('h'.encode(_CODE))
@@ -407,9 +407,9 @@ class Instrument():
 
         return instr[:-2]  # el -1 es para eliminar el fin de linea \r\n
 
-    #===========================================================================
-    # WAVEFORM COMMANDS ========================================================
-    #===========================================================================
+    #==========================================================================
+    # WAVEFORM COMMANDS =======================================================
+    #==========================================================================
 
     # Verified 2022 mdaq209
     # X) Dump Waveform -> 4xHEX x 2048 + EOL
@@ -440,7 +440,6 @@ class Instrument():
             The input argument ("wavestr") must be an string with the WAVE 
             values one each before the other in 4 hexadecimal digits without 
             spaces and without end of line characters.
-
             Expected input string: 4x2048 char wavestring.
 
         Example:
@@ -469,9 +468,9 @@ class Instrument():
         outstr = 'L'+dic[which]
         self.ser.write(outstr.encode(_CODE))
 
-    #===========================================================================
-    # RUN COMMANDS =============================================================
-    #===========================================================================
+    #==========================================================================
+    # RUN COMMANDS ============================================================
+    #==========================================================================
 
     # ACTUALIZADO
     # S) Start (does NOT reset cycle counter) -> 'OK' + EOL
@@ -511,8 +510,10 @@ class Instrument():
 
         Reset the hardware and clear the input buffer.
         """
-        self.ser.write('*'.encode(_CODE))  # I don't remember why I send that '*'. Maybe to ensure
-                                           # abort any thing is waitting mdaq module 
+        
+        # I don't remember why I send that '*'. Maybe to ensure
+        # abort any thing is waitting mdaq module 
+        self.ser.write('*'.encode(_CODE))  
 
         self.ser.read(self.ser.inWaiting())   # vacio el buffer
         if self.VERBOSE:
@@ -524,9 +525,52 @@ class Instrument():
         else:
             raise _UnexpectedProtocol('R',tipo=1,string=instr)
 
-    # rutinas auxiliares y secundarias------------------------------------------
-    # --------------------------------------------------------------------------
+    # Auxilary Routines ------------------------------------------
+    # -------------------------------------------------------------------------
 
+    def open(self):
+        """ Open the serial port. """
+        self.ser.open()
+
+    def close(self):
+        """ Close the serial port. """
+        self.ser.close()
+
+    def raw(self,string):
+        """ 
+        Send raw strings to the MDAQxxxx. 
+        
+        Any string to be sended directly to the MDAQxxx.
+        This functions print on standard output the inmediatly response
+        of the MDAQxxx. 
+        
+        Example:
+            raw('K0001') will send the string K0001 and change the amplitude
+            to 0x0001 value. Inmediartly MDAQxxx answer KXXXX?0001 indicating
+            the change has be done. Where XXXX is the amplitude before 
+            modification.
+        """
+        self.ser.write(string.encode(_CODE))
+        sleep(0.1)
+        nb = self.ser.inWaiting()
+        strout = ''
+        while nb > 0:
+            strout += self.ser.read(nb).decode(_CODE)
+            nb = self.ser.inWaiting()
+            sleep(0.05)
+        print(strout)
+
+    def frequency(self,P=None,U=None):
+        """ Calculate the actual work frequency (in Herz).
+
+            Atetntion! It use HWPARS, so this variable must be well actualized. 
+        """
+        if P == None:
+            P = self.HWPARS['P']
+        if U == None:
+            U = self.HWPARS['U']
+        return frequency(P,U)
+    
     def _command_with_echo(self,com,value):
         """ Auxiliar function for standar setting parameters comunication.
 
@@ -556,39 +600,6 @@ class Instrument():
             self.HWPARS[com] = value
 
 
-
-
-    def open(self):
-        """ Open the serial port. """
-        self.ser.open()
-
-    def close(self):
-        """ Close the serial port. """
-        self.ser.close()
-
-    def raw(self,COMM):
-        """ Send COMM and receipt. """
-        self.ser.write(COMM.encode(_CODE))
-        sleep(0.1)
-        nb = self.ser.inWaiting()
-        strout = ''
-        while nb > 0:
-            strout += self.ser.read(nb).decode(_CODE)
-            nb = self.ser.inWaiting()
-            sleep(0.05)
-        print(strout)
-
-    def frequency(self,P=None,U=None):
-        """ Calculate the actual work frequency (in Herz).
-
-            Atetntion! It use HWPARS, so this variable must be well actualized. """
-        if P == None:
-            P = self.HWPARS['P']
-        if U == None:
-            U = self.HWPARS['U']
-        return frequency(P,U)
-
-
 class _UnexpectedProtocol(Exception):
     def __init__(self, value, tipo=0,string=''):
         if tipo == 0:
@@ -608,8 +619,8 @@ def hes2numlist(string,bn):
 
     Args:
         string: string with hexadecimal integers of the same char length 
-        without separation character.
-        bn: integer. Number of characters per hexadecimal number.
+                without separation character.
+        bn:     integer. Number of characters per hexadecimal number.
 
     Returns: A list of integers.
 
@@ -626,14 +637,17 @@ def hes2numlist(string,bn):
     return y
 
 def heswis2numlist(string):
-    """ string to list of integers. The string is a list of integers in
-    hexadecimal separated by sapces:
+    """ 
+    Convert a string to a list of integers. 
+        
+    String to list of integers. The string is a list of integers writen in
+    hexadecimal and separated by sapces:
     HExadeciaml-String-WIth-Space-TO-NUMber-LIST
 
     Args:
-        string: string with hexadecimal integers of the same char length without
-            separation character.
-        bn: integer. Number of characters per hexadecimal number.
+        string: string with hexadecimal integers of the same char length 
+                without separation character.
+        bn:     integer. Number of characters per hexadecimal number.
 
     Returns: A list of integers.
 
@@ -647,15 +661,18 @@ def heswis2numlist(string):
     return lista
 
 def wavefromfile(datafile,label):
-    """Takes the "label" wave from "datafile".
+    """
+    OLD FUNCTION 
+    Takes the "label" wave from "datafile".
 
-        Args:
-            datafile: a file with MDAQxxx waves.
-            label: string that identifie the wave.
-        Returns:
-            wave in a list fo integers.
+    Args:
+        datafile: a file with MDAQxxx waves.
+        label: string that identifie the wave.
+    Returns:
+        wave in a list fo integers.
 
-        Read /auxilires/ondas.txt and /auxilires/ondas.dat for more information"""
+    Read /auxilires/ondas.txt and /auxilires/ondas.dat for more information.
+    """
     fid=open(datafile,'r')
     for k in fid.readlines():
         if k.split(':')[0] == label:
@@ -664,11 +681,13 @@ def wavefromfile(datafile,label):
     raise ValueError('Wave labeled: %s isn''t in the file %s'%(label,datafile))
 
 def wavesonfile(datafile):
-    """list the waves contents of datafile.
+    """  OKD FUNCTION 
+    List the waves contents of datafile.
 
-        Args: datafile: the name of a file with MDAQ waves.
+    Args: datafile: the name of a file with MDAQ waves.
 
-        Returns: a list with the labels of the waves on the file."""
+    Returns: a list with the labels of the waves on the file.
+    """
     fid=open(datafile,'r')
     lista=list()
     for k in fid.readlines():
@@ -679,22 +698,28 @@ def wavesonfile(datafile):
     return lista
 
 def frequency(P,U):
-    """ Returns the frequency corresponding to the parameters P (step) and 
-        U (TimeBase). 
+    """ 
+    Returns the frequency corresponding to the parameters P (step) and 
+    U (TimeBase). 
 
-        returns   f = 100Mhz * PASO / CANALES / BASE   (mdaq209A)
+    Returns   f = CLOCK * STEP / CHANNELS / BASE
 
-        """
+    """
 
     return CLOCK*P/CANALES/U
 
 def time2N(t,P,U):
-    """ Returns cycle number N such that the total elapsed time is as close as possible 't'. """
+    """ 
+    Returns cycle number N such that the total elapsed time is as close 
+    as possible 't'. 
+    """
     return int( round( t*frequency(P,U) ) )   
 
 def elapsedtime(N,P,U):
-    """ Returns elapsed-time corresponding to N cycles, when P and U are given.
+    """ 
+    Returns elapsed-time corresponding to N cycles, when P and U are given.
 
-        returns   T = N * 1 / :func:`frequency`""" 
+    Returns   T = N * 1 / :func:`frequency`
+    """ 
     return N/frequency(P,U)
 
