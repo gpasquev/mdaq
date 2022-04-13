@@ -2,24 +2,21 @@
 # coding: utf8
 
 """
-Python Driver to work on MDAQ209 hardware.
+Python Driver for MDAQ209.
 
-The current module have low leves drivers to interact through serial port with
+The current module have low level drivers to interact through serial port with
 MDAQ209-UNLP NIM module.
 
-To start use mdaq with a MDAQ-UNLP equipment just put in an interactive python
+To start use mdaq with a MDAQ209 just put in an interactive python
 shell (as ipython)::
 
     >>> hw = mdaq.Instrument('/dev/ttyS0')
 
-(with the '/dev/ttyS0' should be replaced by the **correct port**).
+(where the '/dev/ttyS0' should be replaced by the **correct port**).
 
-If the PC-Hardware is correctly connected you should receipt an OK to the reset
-command::
+If the PC-Hardware is correctly connected you should receipt an OK to::
 
     >>> hw.reset()      
-
-
 
 Class:
     mdaq.Instrument: Class of objects capables of interact with the
