@@ -205,7 +205,8 @@ class Instrument():
         
         Returns:
             The complet string returned by the instrument. It should be a
-            1024x4 chars string."""
+            1024x4 chars + 2 chars for TERMINATOR.
+        """
         
         self.ser.write('Y'.encode(_CODE))
         instr = self.ser.readline().decode(_CODE)
@@ -222,7 +223,7 @@ class Instrument():
         Send "I","J" or "V" commands to the Hardware.
 
         Args:
-            nbytes: an of the integers = 1,2 or 4. They indicate the number 
+            nbytes: nbytes of the integers = 1,2 or 4. They indicate the number 
             of bytes per channel:
  
                 nbytes=1: return the LSB unsigned char  [1024 bytes]
@@ -231,7 +232,8 @@ class Instrument():
                 
                 nbytes=4: return the LSB unsigned int   [4096 bytes] <-- default                
 
-        Return:  1024 tuple with the counters.  """
+        Return:  1024 tuple with the counters.  
+        """
         conversor={4:('I','I'),     # los valores del diccionario son:
                    2:('J','H'),     # (formato para el hardware, comando de 
                    1:('V','B')}     #            conversión para struct.unpack)
@@ -413,9 +415,13 @@ def hes2numlist(string,bn):
     Example:
         if string='0001000A000D...' and bn = 4 then the function 
         returns [1,10,13,...].   """
-    n=len(string)/bn
-    y=list()
-    for i in xrange(n):
+    n = len(string)/bn
+    if not n.is_integer():
+        print('Something wrong in hes2numlist')
+        print('len incoming string: %d'%len(string))
+        print('number of bytes to divide: %d'%bn)
+    y = list()
+    for i in range(int(n)):
         y.append(int(string[i*bn:bn*(i+1)],16))
     return y
 
