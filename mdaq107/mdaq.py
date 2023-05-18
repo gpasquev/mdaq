@@ -37,18 +37,19 @@ import warnings
 import struct
 from numpy import zeros
 
-__version__='0.4.0'
-__author__='Gustavo A. Pasquevich'
+__version__ = '0.4.1'
+__author__ = 'Gustavo A. Pasquevich'
 
-FIRMWARE='MDAQ107-MAC'
-
+FIRMWARE = 'MDAQ107-MAC'
+CANALES = 1024
 _CODE = 'ascii'
+CLOCK = 41.78E6
 
-_TERMINATOR='\r\n'   #CR+LF
-_RESETSTRING=FIRMWARE+_TERMINATOR     # String que devuelve la placa al resetear
-_NUMBYTESRESETSTRING=len(_RESETSTRING)
-_NUMBYTESWAVEIN=4096+2                   
-_NUMBYTESESPEC=4096+2
+_TERMINATOR = '\r\n'   #CR+LF
+_RESETSTRING = FIRMWARE+_TERMINATOR     # String que devuelve la placa al resetear
+_NUMBYTESRESETSTRING = len(_RESETSTRING)
+_NUMBYTESWAVEIN = 4*CANALES + 2                   
+_NUMBYTESESPEC = 4096+2
 
 
 
@@ -77,6 +78,7 @@ class Instrument():
         El objeto queda definido solamente por el puerto serie donde se encuentra
         el dispositivo. Por ejemplo port='/dev/ttyS0' o '/dev/ttyUSB0'."""
     VERBOSE = True
+    PRETTY = False
 
     def __init__(self,port):
         self.version=__version__
@@ -188,6 +190,18 @@ class Instrument():
         instr = self.ser.readline().decode(_CODE)
         if len(instr) != 26:
             raise _UnexpectedProtocol('P',tipo=1,string=instr)
+        if self.PRETTY:
+            pars = instr[:-2].split()
+            print('Parameter         HEX   DECIMAL  OTHER ')
+            print('Amplitude .....: {:} {:>6}'.format(pars[0],int(pars[0],16)))
+            print('Central Channel: {:} {:>6}'.format(pars[1],int(pars[1],16)))
+            print('Cycle Number ..: {:} {:>6}'.format(pars[2],int(pars[2],16)))
+            print('Offset: .......: {:} {:>6}'.format(pars[3],int(pars[3],16)))
+            print('Time Base .....: {:} {:>6}     {:.2f} Hz'.format(pars[4],
+                                        int(pars[4],16),
+                                        frequency(int(pars[4],16))))
+
+
         return instr[:-2]  # The -2 for remove TREMINATOR \r\n at the end of the string
 
     # L) Error  -> '11111111 22222222 33333333 44444444' + EOL
@@ -476,4 +490,13 @@ def wavesonfile(datafile):
             lista.append(k.split(':')[0])
     return lista
         
+def frequency(U):
+    """ 
+    Returns the frequency corresponding to the parameter U (TimeBase). 
+
+    Returns   f = CLOCK / CHANNELS / BASE
+
+    """
+
+    return CLOCK/CANALES/U
 
